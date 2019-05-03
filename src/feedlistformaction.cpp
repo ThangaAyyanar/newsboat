@@ -10,7 +10,7 @@
 #include "config.h"
 #include "exceptions.h"
 #include "feedcontainer.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "listformatter.h"
 #include "logger.h"
 #include "reloader.h"
@@ -40,7 +40,6 @@ FeedListFormAction::FeedListFormAction(View* vv,
 	, unread_feeds(0)
 	, total_feeds(0)
 	, filters(f)
-	, cfg(cfg)
 {
 	assert(true == m.parse(FILTER_UNREAD_FEEDS));
 	valid_cmds.push_back("tag");
@@ -218,7 +217,20 @@ REDO:
 						"at position `%s': %s",
 						feedpos,
 						feed->link());
-					v->open_in_browser(feed->link());
+					if (!feed->link().empty()) {
+						v->open_in_browser(feed->link());
+					} else if (!feed->rssurl().empty()) {
+						v->open_in_browser(feed->rssurl());
+					} else {
+						// rssurl can't be empty, so if we got to this branch,
+						// something is clearly wrong with Newsboat internals.
+						// That's why we write a message to the log, and not
+						// just display it to the user.
+						LOG(Level::INFO,
+							"FeedListFormAction: cannot open feed in browser "
+							"because both `link' and `rssurl' fields are "
+							"empty");
+					}
 				} else {
 					v->show_error(
 						_("Cannot open query feeds in "

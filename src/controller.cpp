@@ -64,15 +64,6 @@ void ignore_signal(int sig)
 	LOG(Level::WARN, "caught signal %d but ignored it", sig);
 }
 
-void omg_a_child_died(int /* sig */)
-{
-	pid_t pid;
-	int stat;
-	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
-	}
-	::signal(SIGCHLD, omg_a_child_died); /* in case of unreliable signals */
-}
-
 Controller::Controller()
 	: v(0)
 	, urlcfg(0)
@@ -103,7 +94,6 @@ int Controller::run(const CliArgsParser& args)
 	::signal(SIGINT, View::ctrl_c_action);
 	::signal(SIGPIPE, ignore_signal);
 	::signal(SIGHUP, sighup_action);
-	::signal(SIGCHLD, omg_a_child_died);
 
 	if (!configpaths.initialized()) {
 		std::cerr << configpaths.error_message() << std::endl;
@@ -130,6 +120,10 @@ int Controller::run(const CliArgsParser& args)
 
 	configpaths.process_args(args);
 
+	if (!configpaths.setup_dirs()) {
+		return EXIT_FAILURE;
+	}
+
 	if (args.do_import) {
 		LOG(Level::INFO,
 			"Importing OPML file from %s",
@@ -141,10 +135,6 @@ int Controller::run(const CliArgsParser& args)
 	}
 
 	LOG(Level::INFO, "nl_langinfo(CODESET): %s", nl_langinfo(CODESET));
-
-	if (!configpaths.setup_dirs()) {
-		return EXIT_FAILURE;
-	}
 
 	if (!args.do_export) {
 		if (!args.silent)
@@ -271,7 +261,7 @@ int Controller::run(const CliArgsParser& args)
 		if (cookies.empty()) {
 			std::cout << strprintf::fmt(
 				_("ERROR: You must set `cookie-cache` to use "
-				  "Newsblur.\n"));
+				  "NewsBlur.\n"));
 			return EXIT_FAILURE;
 		}
 
@@ -669,12 +659,10 @@ std::vector<std::shared_ptr<RssItem>> Controller::search_for_items(
 	return items;
 }
 
-void Controller::enqueue_url(const std::string& url,
-	const std::string& title,
-	const time_t pubDate,
+void Controller::enqueue_url(std::shared_ptr<RssItem> item,
 	std::shared_ptr<RssFeed> feed)
 {
-	queueManager.enqueue_url(url, title, pubDate, feed);
+	queueManager.enqueue_url(item, feed);
 }
 
 void Controller::reload_urls_file()
@@ -867,7 +855,7 @@ void Controller::update_config()
 
 void Controller::load_configfile(const std::string& filename)
 {
-	if (cfgparser.parse(filename, true)) {
+	if (cfgparser.parse(filename)) {
 		update_config();
 	} else {
 		v->show_error(strprintf::fmt(

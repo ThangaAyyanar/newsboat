@@ -86,6 +86,7 @@ namespace utils {
 	std::string run_program(char* argv[], const std::string& input);
 
 	std::string resolve_tilde(const std::string&);
+	std::string resolve_relative(const std::string&, const std::string&);
 	std::string replace_all(std::string str,
 		const std::string& from,
 		const std::string& to);
@@ -94,8 +95,6 @@ namespace utils {
 	std::string wstr2str(const std::wstring& wstr);
 
 	std::wstring clean_nonprintable_characters(std::wstring text);
-
-	std::wstring utf8str2wstr(const std::string& utf8str);
 
 	std::string absolute_url(const std::string& url,
 		const std::string& link);
@@ -151,7 +150,6 @@ namespace utils {
 	std::string get_content(xmlNode* node);
 	std::string get_basename(const std::string& url);
 
-	std::string escape_url(const std::string& url);
 	std::string unescape_url(const std::string& url);
 	void initialize_ssl_implementation(void);
 

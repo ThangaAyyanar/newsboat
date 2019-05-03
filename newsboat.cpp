@@ -16,6 +16,10 @@
 #include "view.h"
 #include "xlicense.h"
 
+extern "C" {
+	void rs_setup_human_panic(void);
+}
+
 using namespace newsboat;
 
 void print_usage(const std::string& argv0)
@@ -101,11 +105,11 @@ void print_version(const std::string& argv0, unsigned int level)
 			  << PROGRAM_URL << std::endl;
 		ss << "Copyright (C) 2006-2015 Andreas Krennmair"
 			  << std::endl;
-		ss << "Copyright (C) 2015-2018 Alexander Batischev"
+		ss << "Copyright (C) 2015-2019 Alexander Batischev"
 			  << std::endl;
 		ss << "Copyright (C) 2006-2017 Newsbeuter contributors"
 			  << std::endl;
-		ss << "Copyright (C) 2017-2018 Newsboat contributors"
+		ss << "Copyright (C) 2017-2019 Newsboat contributors"
 			  << std::endl;
 		ss << std::endl;
 
@@ -153,6 +157,7 @@ void print_version(const std::string& argv0, unsigned int level)
 
 int main(int argc, char* argv[])
 {
+	rs_setup_human_panic();
 	utils::initialize_ssl_implementation();
 
 	setlocale(LC_CTYPE, "");

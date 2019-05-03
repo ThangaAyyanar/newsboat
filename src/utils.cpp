@@ -410,17 +410,7 @@ std::string utils::convert_text(const std::string& text,
 
 std::string utils::get_command_output(const std::string& cmd)
 {
-	FILE* f = popen(cmd.c_str(), "r");
-	std::string buf;
-	if (f) {
-		char cbuf[1024];
-		size_t s;
-		while ((s = fread(cbuf, 1, sizeof(cbuf), f)) > 0) {
-			buf.append(cbuf, s);
-		}
-		pclose(f);
-	}
-	return buf;
+	return RustString(rs_get_command_output(cmd.c_str()));
 }
 
 void utils::extract_filter(const std::string& line,
@@ -500,89 +490,12 @@ std::string utils::retrieve_url(const std::string& url,
 
 void utils::run_command(const std::string& cmd, const std::string& input)
 {
-	int rc = fork();
-	switch (rc) {
-	case -1:
-		break;
-	case 0: { // child:
-		int fd = ::open("/dev/null", O_RDWR);
-		if (fd == -1) {
-			LOG(Level::DEBUG,
-				"utils::run_command: error opening /dev/null: "
-				"(%i) "
-				"%s",
-				errno,
-				strerror(errno));
-			exit(1);
-		}
-		close(0);
-		close(1);
-		close(2);
-		dup2(fd, 0);
-		dup2(fd, 1);
-		dup2(fd, 2);
-		LOG(Level::DEBUG, "utils::run_command: %s '%s'", cmd, input);
-		execlp(cmd.c_str(), cmd.c_str(), input.c_str(), nullptr);
-		LOG(Level::DEBUG,
-			"utils::run_command: execlp of %s failed: %s",
-			cmd,
-			strerror(errno));
-		exit(1);
-	}
-	default:
-		break;
-	}
+	rs_run_command(cmd.c_str(), input.c_str());
 }
 
 std::string utils::run_program(char* argv[], const std::string& input)
 {
-	std::string buf;
-	int ipipe[2];
-	int opipe[2];
-	if (pipe(ipipe) != 0) {
-		return "";
-	}
-	if (pipe(opipe) != 0) {
-		return "";
-	}
-
-	int rc = fork();
-	switch (rc) {
-	case -1:
-		break;
-	case 0: { // child:
-		close(ipipe[1]);
-		close(opipe[0]);
-		dup2(ipipe[0], 0);
-		dup2(opipe[1], 1);
-		close(2);
-
-		int errfd = ::open("/dev/null", O_WRONLY);
-		if (errfd != -1)
-			dup2(errfd, 2);
-
-		execvp(argv[0], argv);
-		exit(1);
-	}
-	default: {
-		close(ipipe[0]);
-		close(opipe[1]);
-		ssize_t written = 0;
-		written = write(ipipe[1], input.c_str(), input.length());
-		if (written != -1) {
-			close(ipipe[1]);
-			char cbuf[1024];
-			int rc2;
-			while ((rc2 = read(opipe[0], cbuf, sizeof(cbuf))) > 0) {
-				buf.append(cbuf, rc2);
-			}
-		} else {
-			close(ipipe[1]);
-		}
-		close(opipe[0]);
-	} break;
-	}
-	return buf;
+	return RustString(rs_run_program(argv, input.c_str()));
 }
 
 std::string utils::resolve_tilde(const std::string& str)
@@ -590,19 +503,15 @@ std::string utils::resolve_tilde(const std::string& str)
 	return RustString(rs_resolve_tilde(str.c_str()));
 }
 
+std::string utils::resolve_relative(const std::string& reference, const std::string &fname) {
+	return RustString(rs_resolve_relative(reference.c_str(), fname.c_str()));
+}
+
 std::string utils::replace_all(std::string str,
 	const std::string& from,
 	const std::string& to)
 {
 	return RustString( rs_replace_all(str.c_str(), from.c_str(), to.c_str()) );
-}
-
-std::wstring utils::utf8str2wstr(const std::string& utf8str)
-{
-	stfl_ipool* pool = stfl_ipool_create("utf-8");
-	std::wstring wstr = stfl_ipool_towc(pool, utf8str.c_str());
-	stfl_ipool_destroy(pool);
-	return wstr;
 }
 
 std::wstring utils::str2wstr(const std::string& str)
@@ -706,16 +615,7 @@ bool utils::is_valid_color(const std::string& color)
 
 bool utils::is_valid_attribute(const std::string& attrib)
 {
-	static const std::unordered_set<std::string> attribs = {"standout",
-		"underline",
-		"reverse",
-		"blink",
-		"dim",
-		"bold",
-		"protect",
-		"invis",
-		"default"};
-	return attribs.find(attrib) != attribs.end();
+	return rs_is_valid_attribute(attrib.c_str());
 }
 
 std::vector<std::pair<unsigned int, unsigned int>> utils::partition_indexes(
@@ -739,28 +639,12 @@ std::vector<std::pair<unsigned int, unsigned int>> utils::partition_indexes(
 
 size_t utils::strwidth(const std::string& str)
 {
-	std::wstring wstr = str2wstr(str);
-	int width = wcswidth(wstr.c_str(), wstr.length());
-	if (width < 1)                // a non-printable character found?
-		return wstr.length(); // return a sane width (which might be
-				      // larger than necessary)
-	return width;                 // exact width
+	return rs_strwidth(str.c_str());
 }
 
 size_t utils::strwidth_stfl(const std::string& str)
 {
-	size_t reduce_count = 0;
-	size_t len = str.length();
-	if (len > 1) {
-		for (size_t idx = 0; idx < len - 1; ++idx) {
-			if (str[idx] == '<' && str[idx + 1] != '>') {
-				reduce_count += 3;
-				idx += 3;
-			}
-		}
-	}
-
-	return strwidth(str) - reduce_count;
+	return rs_strwidth_stfl(str.c_str());
 }
 
 size_t utils::wcswidth_stfl(const std::wstring& str, size_t size)
@@ -915,10 +799,7 @@ void utils::trim_end(std::string& str)
 
 std::string utils::quote(const std::string& str)
 {
-	std::string rv = replace_all(str, "\"", "\\\"");
-	rv.insert(0, "\"");
-	rv.append("\"");
-	return rv;
+	return RustString(rs_quote(str.c_str()));
 }
 
 unsigned int utils::get_random_value(unsigned int max)
@@ -928,15 +809,7 @@ unsigned int utils::get_random_value(unsigned int max)
 
 std::string utils::quote_if_necessary(const std::string& str)
 {
-	std::string result;
-	if (str.find_first_of(" ", 0) == std::string::npos) {
-		result = str;
-	} else {
-		result = utils::replace_all(str, "\"", "\\\"");
-		result.insert(0, "\"");
-		result.append("\"");
-	}
-	return result;
+	return RustString(rs_quote_if_necessary(str.c_str()));
 }
 
 void utils::set_common_curl_options(CURL* handle, ConfigContainer* cfg)
@@ -1101,32 +974,15 @@ curl_proxytype utils::get_proxy_type(const std::string& type)
 	return CURLPROXY_HTTP;
 }
 
-std::string utils::escape_url(const std::string& url)
-{
-	CURL* easyhandle = curl_easy_init();
-	char* output = curl_easy_escape(easyhandle, url.c_str(), 0);
-	if (!output) {
-		LOG(Level::DEBUG, "Libcurl failed to escape url: %s", url);
-		throw std::runtime_error("escaping url failed");
-	}
-	std::string s = output;
-	curl_free(output);
-	curl_easy_cleanup(easyhandle);
-	return s;
-}
-
 std::string utils::unescape_url(const std::string& url)
 {
-	CURL* easyhandle = curl_easy_init();
-	char* output = curl_easy_unescape(easyhandle, url.c_str(), 0, NULL);
-	if (!output) {
-		LOG(Level::DEBUG, "Libcurl failed to escape url: %s", url);
-		throw std::runtime_error("escaping url failed");
+	char* ptr = rs_unescape_url(url.c_str());
+	if (ptr == nullptr) {
+		LOG(Level::DEBUG, "Rust failed to unescape url: %s", url );
+		throw std::runtime_error("unescaping url failed");
+	} else {
+		return RustString(ptr);
 	}
-	std::string s = output;
-	curl_free(output);
-	curl_easy_cleanup(easyhandle);
-	return s;
 }
 
 std::wstring utils::clean_nonprintable_characters(std::wstring text)
@@ -1190,44 +1046,7 @@ int utils::mkdir_parents(const std::string& p, mode_t mode)
 
 std::string utils::make_title(const std::string& const_url)
 {
-	/* Sometimes it is possible to construct the title from the URL
-	 * This attempts to do just that. eg:
-	 * http://domain.com/story/yy/mm/dd/title-with-dashes?a=b
-	 */
-	std::string url = (std::string&)const_url;
-	// Strip out trailing slashes
-	while (url.length() > 0 && url.back() == '/') {
-		url.erase(url.length() - 1);
-	}
-	// get to the final part of the URI's path
-	std::string::size_type pos_of_slash = url.find_last_of('/');
-	// extract just the juicy part 'title-with-dashes?a=b'
-	std::string path = url.substr(pos_of_slash + 1);
-	// find where query part of URI starts
-	std::string::size_type pos_of_qmrk = path.find_first_of('?');
-	// throw away the query part 'title-with-dashes'
-	std::string title = path.substr(0, pos_of_qmrk);
-	// Throw away common webpage suffixes: .html, .php, .aspx, .htm
-	std::regex rx("\\.html$|\\.htm$|\\.php$|\\.aspx$");
-	title = std::regex_replace(title, rx, "");
-	// if there is nothing left, just give up
-	if (title.empty())
-		return title;
-	// 'title with dashes'
-	std::replace(title.begin(), title.end(), '-', ' ');
-	std::replace(title.begin(), title.end(), '_', ' ');
-	//'Title with dashes'
-	if (title.at(0) >= 'a' && title.at(0) <= 'z') {
-		title[0] -= 'a' - 'A';
-	}
-	// Un-escape any percent-encoding, e.g. "It%27s%202017%21" -> "It's
-	// 2017!"
-	auto const result = xmlURIUnescapeString(title.c_str(), 0, nullptr);
-	if (result) {
-		title = result;
-		xmlFree(result);
-	}
-	return title;
+	return RustString(rs_make_title(const_url.c_str()));
 }
 
 int utils::run_interactively(const std::string& command,

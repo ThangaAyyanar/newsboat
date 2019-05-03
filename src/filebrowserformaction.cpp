@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "logger.h"
 #include "strprintf.h"
 #include "utils.h"
@@ -27,7 +27,6 @@ FileBrowserFormAction::FileBrowserFormAction(View* vv,
 	ConfigContainer* cfg)
 	: FormAction(vv, formstr, cfg)
 	, quit(false)
-	, cfg(cfg)
 {
 	// In filebrowser, keyboard focus is at the input field, so user can't
 	// possibly use 'q' key to exit the dialog

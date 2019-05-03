@@ -45,8 +45,72 @@ newsboat_brew_commands: &osx_deps
 matrix:
   fast_finish: true
   include:
+    - compiler: gcc
+      os: osx
+      rust: 1.25.0
+      env:
+        - COMPILER=g++
+        - GCOV=/usr/bin/gcov
+        # a2x will run xmllint on generated files, so we have to pass the path
+        # to AsciiDoc's catalog files
+        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
+      before_install:
+        *osx_deps
+    - compiler: gcc
+      os: osx
+      env:
+        - COMPILER=g++
+        - GCOV=/usr/bin/gcov
+        # a2x will run xmllint on generated files, so we have to pass the path
+        # to AsciiDoc's catalog files
+        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
+      before_install:
+        *osx_deps
+    - compiler: clang
+      os: osx
+      env:
+        - COMPILER=clang++
+        - GCOV=/usr/bin/gcov
+        # a2x will run xmllint on generated files, so we have to pass the path
+        # to AsciiDoc's catalog files
+        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
+      before_install:
+        *osx_deps
+    - compiler: gcc-8
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+            - *global_deps
+      env:
+        - COMPILER=g++-8
+        - GCOV=/usr/bin/gcov-8
+      script: &release_build_script
+        - CXXFLAGS="-O3" make -j2 --keep-going all test
+        - ( cd test && ./test --order rand ); ret=$?; (cargo test) && sh -c "exit $ret"
+    - compiler: clang-8
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-8
+          packages:
+            - clang-8
+            - llvm-8
+            - *clang_deps
+      env:
+        - COMPILER=clang++-8
+        - GCOV="llvm-cov-8 gcov"
+      script: *release_build_script
     - compiler: gcc-4.9
       os: linux
+      dist: trusty
       rust: 1.25.0
       addons:
         apt:
@@ -62,6 +126,7 @@ matrix:
         *install_coveralls
     - compiler: gcc-4.9
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -76,6 +141,7 @@ matrix:
         *install_coveralls
     - compiler: gcc-5
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -90,6 +156,7 @@ matrix:
         *install_coveralls
     - compiler: gcc-6
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -104,6 +171,7 @@ matrix:
         *install_coveralls
     - compiler: gcc-7
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -118,6 +186,7 @@ matrix:
         *install_coveralls
     - compiler: gcc-8
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -132,6 +201,7 @@ matrix:
         *install_coveralls
     - compiler: clang
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -145,6 +215,7 @@ matrix:
         *install_coveralls
     - compiler: clang-4.0
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -161,6 +232,7 @@ matrix:
         *install_coveralls
     - compiler: clang-5.0
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -177,6 +249,7 @@ matrix:
         *install_coveralls
     - compiler: clang-6.0
       os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -191,43 +264,53 @@ matrix:
         - GCOV="llvm-cov-6.0 gcov"
       before_install:
         *install_coveralls
-    - compiler: gcc
-      os: osx
-      rust: 1.25.0
+    - compiler: clang-7
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-7
+          packages:
+            - clang-7
+            - llvm-7
+            - *clang_deps
       env:
-        - COMPILER=g++
-        - GCOV=/usr/bin/gcov
-        # a2x will run xmllint on generated files, so we have to pass the path
-        # to AsciiDoc's catalog files
-        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
+        - COMPILER=clang++-7
+        - GCOV="llvm-cov-7 gcov"
       before_install:
-        *osx_deps
-    - compiler: gcc
-      os: osx
+        *install_coveralls
+    - compiler: clang-8
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-8
+          packages:
+            - clang-8
+            - llvm-8
+            - *clang_deps
       env:
-        - COMPILER=g++
-        - GCOV=/usr/bin/gcov
-        # a2x will run xmllint on generated files, so we have to pass the path
-        # to AsciiDoc's catalog files
-        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
+        - COMPILER=clang++-8
+        - GCOV="llvm-cov-8 gcov"
       before_install:
-        *osx_deps
-    - compiler: clang
-      os: osx
-      env:
-        - COMPILER=clang++
-        - GCOV=/usr/bin/gcov
-        # a2x will run xmllint on generated files, so we have to pass the path
-        # to AsciiDoc's catalog files
-        - XML_CATALOG_FILES=/usr/local/etc/xml/catalog
-      before_install:
-        *osx_deps
+        *install_coveralls
     - addons:
         apt:
           packages:
             - i18nspector
       env:
-        - CHECKS=1
+        - CHECKS=i18nspector
+    - addons:
+        apt:
+          packages: []
+      env:
+        - CHECKS="cargo-fmt"
+      before_install:
+        - rustup component add rustfmt
 
 install:
   - export CXX=$COMPILER
@@ -239,14 +322,13 @@ script:
   # stuff. To maximize the benefits, we ask Make to process as many rules as
   # possible before failing. This enables developers to fix more errors before
   # re-submitting the code to CI, which should increase throughput.
-  - if [ -z "$CHECKS" ]; then   make -j2 --keep-going all test   ; fi
-  - if [ -z "$CHECKS" ]; then   make distclean   ; fi
-  - if [ -z "$CHECKS" ]; then   make -j2 PROFILE=1 all test   ; fi
+  - if [ -z "$CHECKS" ]; then   make -j2 PROFILE=1 --keep-going all test   ; fi
   # We want to run both C++ and Rust tests, but we also want this entire
   # command to fail if some test suite fails. That's why we store the C++'s
   # exit code and chain it to Rust's in the end.
   - if [ -z "$CHECKS" ]; then   ( cd test && ./test --order rand ); ret=$?; (cargo test) && sh -c "exit $ret"   ; fi
-  - if [ -n "$CHECKS" ]; then   make run-i18nspector | tee i18nspector.log && if `egrep '^(E|W):' i18nspector.log >/dev/null 2>&1` ; then false else true; fi   ; fi
+  - if [ "$CHECKS" = "i18nspector" ]; then   make run-i18nspector | tee i18nspector.log && if `egrep '^(E|W):' i18nspector.log >/dev/null 2>&1` ; then false else true; fi   ; fi
+  - if [ "$CHECKS" = "cargo-fmt" ]; then cargo fmt -- --check; fi
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}

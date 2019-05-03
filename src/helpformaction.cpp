@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "config.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "keymap.h"
 #include "listformatter.h"
 #include "strprintf.h"
@@ -19,7 +19,6 @@ HelpFormAction::HelpFormAction(View* vv,
 	: FormAction(vv, formstr, cfg)
 	, quit(false)
 	, apply_search(false)
-	, cfg(cfg)
 {
 }
 

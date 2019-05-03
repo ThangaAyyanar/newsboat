@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "config.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "listformatter.h"
 #include "strprintf.h"
 #include "utils.h"
@@ -25,7 +25,6 @@ SelectFormAction::SelectFormAction(View* vv,
 	: FormAction(vv, formstr, cfg)
 	, quit(false)
 	, type(SelectionType::TAG)
-	, cfg(cfg)
 {
 }
 

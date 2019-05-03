@@ -10,7 +10,7 @@
 #include "configcontainer.h"
 #include "dllist.h"
 #include "download.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "help.h"
 #include "logger.h"
 #include "pbcontroller.h"
@@ -79,7 +79,8 @@ void PbView::run(bool auto_download)
 			std::string code = "{list";
 			std::string formatstring = ctrl->get_formatstr();
 
-			unsigned int width = utils::to_u(dllist_form.get("feeds:w"));
+			dllist_form.run(-3); // compute all widget dimensions
+			unsigned int width = utils::to_u(dllist_form.get("dls:w"));
 
 			unsigned int i = 0;
 			for (const auto& dl : ctrl->downloads()) {

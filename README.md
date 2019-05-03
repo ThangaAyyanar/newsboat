@@ -13,7 +13,7 @@ https://newsboat.org/
 
 Alternatively, you can check out the latest version from the Git repository:
 
-    git clone git://github.com/newsboat/newsboat.git
+	$ git clone git://github.com/newsboat/newsboat.git
 
 Dependencies
 ------------
@@ -46,14 +46,17 @@ is as simple as:
 	$ make
 	$ sudo make install
 
-(And if you ever need to uninstall it, use `make uninstall`.)
+And if you ever need to uninstall it, use `make uninstall`.
+
+Cross-compilers need to set `CARGO_BUILD_TARGET`; see [cargo
+documentation](https://doc.rust-lang.org/cargo/reference/config.html#environment-variables).
 
 Support
 -------
 
 * Check out our
-  [documentation](https://newsboat.org/releases/2.13/docs/newsboat.html) and
-  [FAQ](https://newsboat.org/releases/2.13/docs/faq.html)
+  [documentation](https://newsboat.org/releases/2.15/docs/newsboat.html) and
+  [FAQ](https://newsboat.org/releases/2.15/docs/faq.html)
 * Bugs and whatnot should be reported to the
   [issue tracker](https://github.com/newsboat/newsboat/issues)
 * Drop us a line at
@@ -75,6 +78,13 @@ You'll probably want to run the tests; here's how:
 
 Note the use of ramdisk as `TMPDIR`: some tests create temporary files, which
 slows them down if `TMPDIR` is on HDD or even SSD.
+
+We check the formatting of the Rust code during CI using
+[rust-fmt](https://github.com/rust-lang/rustfmt).  To make sure your code is
+properly formated install and run rust-fmt:
+
+	$ rustup component add rustfmt
+	$ cargo fmt
 
 License
 -------

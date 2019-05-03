@@ -2,13 +2,13 @@
 extern crate libnewsboat;
 extern crate tempfile;
 
-use libnewsboat::logger::{get_instance, Level};
 use self::tempfile::TempDir;
+use libnewsboat::logger::{self, get_instance, Level};
 use std::fs::File;
-use std::io::{Result, BufReader, BufRead};
+use std::io::{BufRead, BufReader, Result};
 use std::path;
 
-fn log_contains_n_lines(logfile: &path::Path, n: usize)  -> Result<()> {
+fn log_contains_n_lines(logfile: &path::Path, n: usize) -> Result<()> {
     let file = File::open(logfile)?;
     let reader = BufReader::new(file);
     assert_eq!(reader.lines().count(), n);
@@ -29,7 +29,7 @@ fn t_log_macro_writes_messages_to_the_log() {
 
     log!(Level::Debug, "Greetings");
     log!(Level::UserError, "Please set some settings");
-    log!(Level::Error, &format!("Answer invalid: {}", 41));
+    log!(Level::Error, "Answer invalid: {}", 41);
 
     log_contains_n_lines(&logfile, 3).unwrap();
 }

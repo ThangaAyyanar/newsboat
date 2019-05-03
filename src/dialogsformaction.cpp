@@ -3,7 +3,7 @@
 #include <cstdio>
 
 #include "config.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "listformatter.h"
 #include "strprintf.h"
 #include "utils.h"
@@ -16,7 +16,6 @@ DialogsFormAction::DialogsFormAction(View* vv,
 	ConfigContainer* cfg)
 	: FormAction(vv, formstr, cfg)
 	, update_list(true)
-	, cfg(cfg)
 {
 }
 

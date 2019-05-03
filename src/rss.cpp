@@ -228,7 +228,7 @@ std::string RssFeed::title() const
 	bool found_title = false;
 	std::string alt_title;
 	for (const auto& tag : tags_) {
-		if (tag.substr(0, 1) == "~" || tag.substr(0, 1) == "!") {
+		if (tag.substr(0, 1) == "~") {
 			found_title = true;
 			alt_title = tag.substr(1, tag.length() - 1);
 			break;
@@ -489,13 +489,13 @@ bool RssIgnores::matches_resetunread(const std::string& url)
 void RssFeed::update_items(std::vector<std::shared_ptr<RssFeed>> feeds)
 {
 	std::lock_guard<std::mutex> lock(item_mutex);
-	if (query.length() == 0)
+	if (query.empty()) {
 		return;
+	}
 
 	LOG(Level::DEBUG, "RssFeed::update_items: query = `%s'", query);
 
-	struct timeval tv1, tv2, tvx;
-	gettimeofday(&tv1, nullptr);
+	ScopeMeasure sm("RssFeed::update_items");
 
 	Matcher m(query);
 
@@ -503,40 +503,25 @@ void RssFeed::update_items(std::vector<std::shared_ptr<RssFeed>> feeds)
 	items_guid_map.clear();
 
 	for (const auto& feed : feeds) {
-		if (!feed->is_query_feed()) { // don't fetch items from other query feeds!
-			for (const auto& item : feed->items()) {
-				if (m.matches(item.get())) {
-					LOG(Level::DEBUG,
-						"RssFeed::update_items: "
-						"Matcher "
-						"matches!");
-					item->set_feedptr(feed);
-					items_.push_back(item);
-					items_guid_map[item->guid()] = item;
-				}
+		if (feed->is_query_feed()) {
+			// don't fetch items from other query feeds!
+			continue;
+		}
+		for (const auto& item : feed->items()) {
+			if (!item->deleted() && m.matches(item.get())) {
+				LOG(Level::DEBUG, "RssFeed::update_items: Matcher matches!");
+				item->set_feedptr(feed);
+				items_.push_back(item);
+				items_guid_map[item->guid()] = item;
 			}
 		}
 	}
 
-	gettimeofday(&tvx, nullptr);
+	sm.stopover("matching");
 
 	std::sort(items_.begin(), items_.end());
 
-	gettimeofday(&tv2, nullptr);
-	unsigned long diff =
-		(((tv2.tv_sec - tv1.tv_sec) * 1000000) + tv2.tv_usec) -
-		tv1.tv_usec;
-	unsigned long diffx =
-		(((tv2.tv_sec - tvx.tv_sec) * 1000000) + tv2.tv_usec) -
-		tvx.tv_usec;
-	LOG(Level::DEBUG,
-		"RssFeed::update_items matching took %lu.%06lu s",
-		diff / 1000000,
-		diff % 1000000);
-	LOG(Level::DEBUG,
-		"RssFeed::update_items sorting took %lu.%06lu s",
-		diffx / 1000000,
-		diffx % 1000000);
+	sm.stopover("sorting");
 }
 
 void RssFeed::set_rssurl(const std::string& u)
@@ -667,6 +652,9 @@ void RssFeed::sort_unlocked(const ArticleSortStrategy& sort_strategy)
 					: (a->pubDate_timestamp() <
 						  b->pubDate_timestamp());
 			});
+		break;
+	case ArtSortMethod::RANDOM:
+		std::random_shuffle(items_.begin(), items_.end());
 		break;
 	}
 }

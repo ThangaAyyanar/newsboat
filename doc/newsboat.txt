@@ -377,7 +377,7 @@ filter feeds by tags; see <<_tagging>> and <<_filter_language>> for details.
 NewsBlur
 ~~~~~~~~
 
-https://newsblur.com/[Newsblur] is a successor to Google Reader. Configuration
+https://newsblur.com/[NewsBlur] is a successor to Google Reader. Configuration
 basically works the same as with <<_the_old_reader,The Old Reader>>.
 
 First, set your <<urls-source,`urls-source`>>:
@@ -528,6 +528,11 @@ hostname of your instance against the hostname specified in the SSL certificate
 you're using, just say so:
 
 	ocnews-verifyhost "no"
+
+If you see intermittent "Authentication failed" errors, try
+https://docs.nextcloud.com/server/stable/admin_manual/configuration_server/caching_configuration.html[configuring
+memory caching]. That should improve the responsiveness of the API and fix the
+errors.
 
 ownCloud News provides the ability to "star" articles; starred articles are basically
 bookmarks. Newsboat allows the use of this feature by mapping user-specified
@@ -1017,6 +1022,7 @@ Examples:
 Identifier:Meaning
 [[download-filename-format-u]]<<download-filename-format-u,+u+>>:Filename part of the download URL. May be empty. May include https\://en.wikipedia.org/wiki/Query_string[a query string]
 [[download-filename-format-n]]<<download-filename-format-n,+n+>>:Name of the podcast feed
+[[download-filename-format-N]]<<download-filename-format-N,+N+>>:Name of the podcast feed. Contains the original feed's name, even when selected through a query feed
 [[download-filename-format-h]]<<download-filename-format-h,+h+>>:Name of the podcast feed's hostname
 [[download-filename-format-t]]<<download-filename-format-t,+t+>>:Title of the podcast
 [[download-filename-format-e]]<<download-filename-format-e,+e+>>:Extension of the podcast episode
@@ -1334,9 +1340,9 @@ License
 MIT License
 
 Copyright 2006-2015 Andreas Krennmair <ak@newsbeuter.org>
-Copyright 2015-2018 Alexander Batischev <eual.jp@gmail.com>
+Copyright 2015-2019 Alexander Batischev <eual.jp@gmail.com>
 Copyright 2006-2017 Newsbeuter contributors
-Copyright 2017-2018 Newsboat contributors
+Copyright 2017-2019 Newsboat contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),

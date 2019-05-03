@@ -1,5 +1,7 @@
 # Changes for Newsboat
 
+
+
 ## Unreleased
 
 ### Added
@@ -8,6 +10,110 @@
 ### Removed
 ### Fixed
 ### Security
+
+
+
+## 2.15 - 2019-03-23
+
+### Added
+- `random` `article-sort-order` (Jagannathan Tiruvallur Eachambadi)
+- Cursor position in article list is reset after marking the feed as read
+    (Stefan Assmann)
+
+### Changed
+- Update vendored version of Catch2 to 2.7.0
+- Give our Snap access to `xdg-open`
+- Make "delete all items" work in query feeds (Alexander Batischev) (#456)
+
+### Fixed
+- Use a native compiler for internal tools when cross-compiling (maxice8)
+- Always write to `error-log`, no matter the log level specified on the command
+    line (Alexander Batischev)
+- (Regression) Let users interact with programs run by "exec:", backticks in
+    config, and `*-passwordeval` settings (Alexander Batischev) (#455)
+- Do not add deleted items to query feeds (Alexander Batischev) (#456)
+- Setup directories before importing feeds, to avoid the import silently failing
+    (Neill Miller)
+
+
+
+## 2.14.1 - 2019-02-10
+
+Lists below only mention user-visible changes, but I would also like to
+acknowledge contributions from the following people: kkdd, Raphael Nestler.
+
+### Added
+- Support for cross-compilation with CARGO_BUILD_TARGET environment variable
+    (maxice8)
+- `%N` format for `download-path` and `download-filename-format` settings. This
+    format is replaced by item's original feed-title, even when selected through
+    the query feed (Felix Viernickel) (#428)
+
+### Changed
+- Translations: Polish (Carno)
+- When opening a never-fetched feed in the browser, just use the feed's URL
+    (Alexander Batischev)
+- Update vendored version of Catch2 to 2.6.0
+
+### Fixed
+- Build on FreeBSD (Tobias Kortkamp)
+- Messed-up highlighting when regex matches start-of-line (zaowen) (#401)
+- Failing to update The Old Reader feeds (Alexander Batischev) (#406)
+- "NewsBlur" spelling throughout the docs and messages (zaowen) (#409)
+- Lack of space between podcast URL and its MIME type (Alexander Batischev) (#425)
+- "rev-sort" command name in docs (Jakob Kogler)
+- Keybindings not applied in dialogs view (Felix Viernickel) (#431)
+- Spacer formatter not working in podlist-format (Alexander Batischev) (#434)
+
+
+
+## 2.14 - 2018-12-29
+
+Lists below only mention user-visible changes, but I would also like to
+acknowledge contributions from the following people: Paul Woolcock, Raphael
+Nestler, Thanga Ayyanar A.
+
+### Added
+- Dependency on Rust 1.25+. The compiler (`rustc`) and the build tool (`cargo`)
+    are required
+- `download-filename-format` setting that controls how Podboat names the files.
+    Default is the same as older versions of Podboat (Jagannathan Tiruvallur
+    Eachambadi)
+- `podlist-format` setting that controls formatting of the items on Podboat's
+    main screen. Also, a `%b` format specifier that contains just the basename
+    of the download (e.g. "podcast.mp3" instead of "/home/name/podcast.mp3")
+    (zaowen)
+- Human-readable message when Rust code panics (Alexander Batischev)
+- `unbind-key -a`, which unbinds all keys (Kamil Wsół)
+
+### Changed
+- Look up `BROWSER` environment variable before defaulting to lynx(1) (Kamil
+    Wsół) (#283)
+- Strip query parameters from downloaded podcasts' names (i.e. name them as
+    "podcast.mp3", not "podcast.mp3?key=19ad740") (Jagannathan Tiruvallur
+    Eachambadi)
+- Update translations: Russian, Ukrainian (Alexander Batischev), German
+    (Lysander Trischler)
+- Document that minimum supported CURL version is 7.21.6. This has been the case
+    since 2.10, but wasn't documented at the time (Alexander Batischev)
+- Update vendored version of nlohmann/json to 3.4.0
+- Update vendored version of Catch2 to 2.5.0
+
+### Fixed
+- HTTP response 400 errors with Inoreader (Erik Li) (#175)
+- Podboat's crash (segmentation fault) when parsing a comment in the queue file.
+    Comments aren't really supported by Podboat since it overwrites the file
+    from time to time, but the crash is still unacceptable (Nikos Tsipinakis)
+- Newsboat displaying articles differently in "internal" and external pagers
+    (Alexander Batischev)
+- One-paragraph items not rendered at all (Alexander Batischev)
+- Crash (segmentation fault) on feeds that don't provide a `url` attribute
+    (ksunden)
+- Hangs when `highlight` rule matches an empty string (zaowen)
+- Article disappearing from the pager upon feed reload (zaowen)
+    (https://github.com/akrennmair/newsbeuter/issues/534)
+
+
 
 ## 2.13 - 2018-09-22
 
@@ -22,8 +128,8 @@ Sanchez, Friedrich von Never, Kamil Wsół, glacambre.
     (Kamil Wsół)
 
 ### Changed
-- Require `cookie-cache` setting if Newsblur API is used (Alexander Batischev)
-- Translations: Russian, Ukraininan (Alexander Batischev), Swedish (Dennis
+- Require `cookie-cache` setting if NewsBlur API is used (Alexander Batischev)
+- Translations: Russian, Ukrainian (Alexander Batischev), Swedish (Dennis
     Öberg), German (Lysander Trischler)
 - json.hpp updated to version 3.2.0
 - Natural sort order for article titles, so numbers are put in the expected
@@ -31,6 +137,8 @@ Sanchez, Friedrich von Never, Kamil Wsół, glacambre.
 
 ### Fixed
 - Do not create empty files if history is disabled (Nikos Tsipinakis)
+
+
 
 ## 2.12 - 2018-06-24
 
@@ -46,7 +154,7 @@ Schuster.
 - `:q` as alternative to `:quit` (Franz König)
 - Support for `open-in-browser` in URL dialog, thus fixing many user macros in
     that dialog (Felix Viernickel) (#194)
-- "Author" field for items fetched from Newsblur (Chris Nehren)
+- "Author" field for items fetched from NewsBlur (Chris Nehren)
 - Coding style, mostly enforced through `clang-format`. Non-enforceable things
     are documented in docs/code-style.markdown (Alexander Batischev)
 - A check in `bind-key` that will now throw an error on binding to
@@ -76,6 +184,8 @@ Schuster.
 - Various problems found by clang-analyzer and Coverity Scan (Alexander
     Batischev)
 
+
+
 ## 2.11.1 - 2018-03-30
 
 ### Fixed
@@ -83,6 +193,8 @@ Schuster.
 - If built from the tarball, Newsboat 2.11 reported its version as 2.10.2. My
     bad. Kudos to Haudegen, Ryan Mulligan and Robert Schütz for catching that
     one. (Alexander Batischev)
+
+
 
 ## 2.11 - 2018-03-25
 
@@ -125,6 +237,8 @@ Pedersen, and Kaligule.
 
 - Unwanted logging to stdout on `--export-to-opml` (#104) (Alexander Batischev)
 
+
+
 ## 2.10.2 - 2017-12-25
 
 Lists below only mention user-visible changes, but I would also like to
@@ -155,7 +269,7 @@ Karlsson, Kamil Wsół, Mike Crute, Niels Kobschätzki, and maiki.
 ### Fixed
 
 - Do not create XDG data dir if not using XDG (#8)
-- When used with Newsblur, check on startup if cookie-cache exists or can be
+- When used with NewsBlur, check on startup if cookie-cache exists or can be
     created, because integration doesn't work without cookies (#13)
 - Builds on AARCH64 and ARMHF (#43)
 - Only show an error message once when unknown option is supplied
@@ -170,6 +284,8 @@ Karlsson, Kamil Wsół, Mike Crute, Niels Kobschätzki, and maiki.
 - Don't segfault if `error-log` points to non-existent file (Simon Schuster)
 - Spanish translation (José Manuel García-Patos)
 
+
+
 ## 2.10.1 - 2017-09-22
 
 ### Added
@@ -179,6 +295,8 @@ Karlsson, Kamil Wsół, Mike Crute, Niels Kobschätzki, and maiki.
 ### Fixed
 
 - XDG data dir is created if XDG config dir exists (regression happened in 2.10)
+
+
 
 ## 2.10 - 2017-09-20
 
@@ -207,7 +325,7 @@ project.
 - New proxy type: socks5h. It proxies DNS requests as well as connections (David
     Kalnischkies)
 - Support for h5 and h6 HTML elements (Nikos Tsipinakis)
-- Notify users if Newsblur feed they're subscribed to no longer exists (#494)
+- Notify users if NewsBlur feed they're subscribed to no longer exists (#494)
     (Andrew Martin)
 - `passwordeval` settings for all remote APIs, which obtains a password by
     running a user-specified command (Andrew Martin)

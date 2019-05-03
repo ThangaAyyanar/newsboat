@@ -16,16 +16,19 @@ History FormAction::cmdlinehistory;
 
 FormAction::FormAction(View* vv, std::string formstr, ConfigContainer* cfg)
 	: v(vv)
+	, cfg(cfg)
 	, f(new Stfl::Form(formstr))
 	, do_redraw(true)
 	, finish_operation(OP_NIL)
 	, qna_history(nullptr)
-	, cfg(cfg)
 {
 	if (v) {
 		if (cfg->get_configvalue_as_bool("show-keymap-hint") == false) {
 			f->set("showhint", "0");
 		}
+		if (cfg->get_configvalue_as_bool("show-title-bar") == false) {
+			f->set("showtitle", "0");
+ 		}
 		if (cfg->get_configvalue_as_bool("swap-title-and-hints") ==
 			true) {
 			std::string hints = f->dump("hints", "", 0);

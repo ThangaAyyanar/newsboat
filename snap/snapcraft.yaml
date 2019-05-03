@@ -16,14 +16,15 @@ apps:
     plugs:
       - network
       - home
+      - desktop
   podboat:
     command: usr/local/bin/podboat
-    aliases: [podboat]
     environment:
       LOCPATH: "$SNAP/usr/lib/locale"
     plugs:
       - network
       - home
+      - desktop
 
 parts:
   newsboat:
@@ -44,8 +45,10 @@ parts:
       - docbook-xsl
       - libssl-dev
       - gettext
+      - cargo
     stage-packages:
       - libxml2
       - librtmp1
       - locales-all
       - libcurl3
+      - libstfl0

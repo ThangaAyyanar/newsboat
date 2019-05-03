@@ -8,7 +8,7 @@
 #include "config.h"
 #include "controller.h"
 #include "exceptions.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "logger.h"
 #include "strprintf.h"
 #include "utils.h"
@@ -38,7 +38,6 @@ ItemListFormAction::ItemListFormAction(View* vv,
 	, invalidation_mode(InvalidationMode::COMPLETE)
 	, rsscache(cc)
 	, filters(f)
-	, cfg(cfg)
 {
 	assert(true == m.parse(FILTER_UNREAD_ITEMS));
 }
@@ -108,7 +107,13 @@ void ItemListFormAction::process_operation(Operation op,
 			for (const auto& pair : visible_items) {
 				pair.first->set_deleted(true);
 			}
-			rsscache->mark_feed_items_deleted(feed->rssurl());
+			if (feed->is_query_feed()) {
+				for (const auto& pair : visible_items) {
+					rsscache->mark_item_deleted(pair.first->guid(), true);
+				}
+			} else {
+				rsscache->mark_feed_items_deleted(feed->rssurl());
+			}
 			invalidate(InvalidationMode::COMPLETE);
 		}
 	} break;
@@ -484,8 +489,26 @@ void ItemListFormAction::process_operation(Operation op,
 				v->get_ctrl()->mark_all_read(feed);
 			}
 			if (cfg->get_configvalue_as_bool(
-				    "markfeedread-jumps-to-next-unread"))
+				    "markfeedread-jumps-to-next-unread")) {
 				process_operation(OP_NEXTUNREAD);
+			} else { // reposition to first/last item
+				std::string sortorder =
+					cfg->get_configvalue("article-sort-order");
+
+				if (sortorder == "date-desc") {
+					LOG(Level::DEBUG,
+						"ItemListFormAction:: "
+						"reset itempos to last");
+					f->set("itempos",
+						std::to_string(visible_items.size() - 1));
+				}
+				if (sortorder == "date-asc") {
+					LOG(Level::DEBUG,
+						"ItemListFormAction:: "
+						"reset itempos to first");
+					f->set("itempos", "0");
+				}
+			}
 			invalidate(InvalidationMode::COMPLETE);
 			v->set_status("");
 		} catch (const DbException& e) {
@@ -628,14 +651,14 @@ void ItemListFormAction::process_operation(Operation op,
 		/// This string is related to the letters in parentheses in the
 		/// "Sort by (d)ate/..." and "Reverse Sort by (d)ate/..."
 		/// messages
-		std::string input_options = _("dtfalg");
+		std::string input_options = _("dtfalgr");
 		char c = v->confirm(
 			_("Sort by "
-			  "(d)ate/(t)itle/(f)lags/(a)uthor/(l)ink/(g)uid?"),
+			  "(d)ate/(t)itle/(f)lags/(a)uthor/(l)ink/(g)uid/(r)andom?"),
 			input_options);
 		if (!c)
 			break;
-		unsigned int n_options = ((std::string) "dtfalg").length();
+		unsigned int n_options = ((std::string) "dtfalgr").length();
 		if (input_options.length() < n_options)
 			break;
 		if (c == input_options.at(0)) {
@@ -651,17 +674,19 @@ void ItemListFormAction::process_operation(Operation op,
 			cfg->set_configvalue("article-sort-order", "link-asc");
 		} else if (c == input_options.at(5)) {
 			cfg->set_configvalue("article-sort-order", "guid-asc");
+		} else if (c == input_options.at(6)) {
+			cfg->set_configvalue("article-sort-order", "random");
 		}
 	} break;
 	case OP_REVSORT: {
-		std::string input_options = _("dtfalg");
+		std::string input_options = _("dtfalgr");
 		char c = v->confirm(
 			_("Reverse Sort by "
-			  "(d)ate/(t)itle/(f)lags/(a)uthor/(l)ink/(g)uid?"),
+			  "(d)ate/(t)itle/(f)lags/(a)uthor/(l)ink/(g)uid/(r)andom?"),
 			input_options);
 		if (!c)
 			break;
-		unsigned int n_options = ((std::string) "dtfalg").length();
+		unsigned int n_options = ((std::string) "dtfalgr").length();
 		if (input_options.length() < n_options)
 			break;
 		if (c == input_options.at(0)) {
@@ -679,6 +704,8 @@ void ItemListFormAction::process_operation(Operation op,
 			cfg->set_configvalue("article-sort-order", "link-desc");
 		} else if (c == input_options.at(5)) {
 			cfg->set_configvalue("article-sort-order", "guid-desc");
+		} else if (c == input_options.at(6)) {
+			cfg->set_configvalue("article-sort-order", "random");
 		}
 	} break;
 	case OP_INT_RESIZE:
@@ -953,17 +980,17 @@ std::string ItemListFormAction::item2formatted_line(const ItemPtrPosPair& item,
 		gen_datestr(item.first->pubDate_timestamp(), datetime_format));
 	if (feed->rssurl() != item.first->feedurl() &&
 		item.first->get_feedptr() != nullptr) {
-		auto feedtitle = utils::replace_all(
-			item.first->get_feedptr()->title(), "<", "<>");
+		auto feedtitle = utils::quote_for_stfl(
+			item.first->get_feedptr()->title());
 		utils::remove_soft_hyphens(feedtitle);
 		fmt.register_fmt('T', feedtitle);
 	}
 
-	auto itemtitle = utils::replace_all(item.first->title(), "<", "<>");
+	auto itemtitle = utils::quote_for_stfl(item.first->title());
 	utils::remove_soft_hyphens(itemtitle);
 	fmt.register_fmt('t', itemtitle);
 
-	auto itemauthor = utils::replace_all(item.first->author(), "<", "<>");
+	auto itemauthor = utils::quote_for_stfl(item.first->author());
 	utils::remove_soft_hyphens(itemauthor);
 	fmt.register_fmt('a', itemauthor);
 

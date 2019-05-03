@@ -32,7 +32,7 @@ extern "C" {
 #include "feedlistformaction.h"
 #include "filebrowser.h"
 #include "formaction.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "help.h"
 #include "helpformaction.h"
 #include "htmlrenderer.h"
@@ -584,6 +584,7 @@ void View::view_dialogs()
 		std::shared_ptr<DialogsFormAction> dialogs(
 			new DialogsFormAction(this, dialogs_str, cfg));
 		dialogs->set_parent_formaction(fa);
+		set_bindings(dialogs);
 		apply_colors(dialogs);
 		dialogs->init();
 		formaction_stack.push_back(dialogs);
@@ -741,9 +742,9 @@ bool View::get_random_unread(ItemListFormAction* itemlist,
 		itemlist->init();
 		if (itemlist->jump_to_random_unread_item()) {
 			if (itemview) {
-				itemview->init();
 				itemview->set_feed(itemlist->get_feed());
 				itemview->set_guid(itemlist->get_guid());
+				itemview->init();
 			}
 			return true;
 		}
@@ -766,9 +767,9 @@ bool View::get_previous_unread(ItemListFormAction* itemlist,
 			"same "
 			"feed");
 		if (itemview) {
-			itemview->init();
 			itemview->set_feed(itemlist->get_feed());
 			itemview->set_guid(itemlist->get_guid());
+			itemview->init();
 		}
 		return true;
 	} else if (cfg->get_configvalue_as_bool("goto-next-feed") == false) {
@@ -785,9 +786,9 @@ bool View::get_previous_unread(ItemListFormAction* itemlist,
 		itemlist->init();
 		if (itemlist->jump_to_previous_unread_item(true)) {
 			if (itemview) {
-				itemview->init();
 				itemview->set_feed(itemlist->get_feed());
 				itemview->set_guid(itemlist->get_guid());
+				itemview->init();
 			}
 			return true;
 		}
@@ -842,9 +843,9 @@ bool View::get_next_unread(ItemListFormAction* itemlist,
 			"View::get_next_unread: found unread article in same "
 			"feed");
 		if (itemview) {
-			itemview->init();
 			itemview->set_feed(itemlist->get_feed());
 			itemview->set_guid(itemlist->get_guid());
+			itemview->init();
 		}
 		return true;
 	} else if (cfg->get_configvalue_as_bool("goto-next-feed") == false) {
@@ -861,9 +862,9 @@ bool View::get_next_unread(ItemListFormAction* itemlist,
 		itemlist->init();
 		if (itemlist->jump_to_next_unread_item(true)) {
 			if (itemview) {
-				itemview->init();
 				itemview->set_feed(itemlist->get_feed());
 				itemview->set_guid(itemlist->get_guid());
+				itemview->init();
 			}
 			return true;
 		}
@@ -881,9 +882,9 @@ bool View::get_previous(ItemListFormAction* itemlist,
 	if (itemlist->jump_to_previous_item(false)) {
 		LOG(Level::DEBUG, "View::get_previous: article in same feed");
 		if (itemview) {
-			itemview->init();
 			itemview->set_feed(itemlist->get_feed());
 			itemview->set_guid(itemlist->get_guid());
+			itemview->init();
 		}
 		return true;
 	} else if (cfg->get_configvalue_as_bool("goto-next-feed") == false) {
@@ -897,9 +898,9 @@ bool View::get_previous(ItemListFormAction* itemlist,
 		itemlist->init();
 		if (itemlist->jump_to_previous_item(true)) {
 			if (itemview) {
-				itemview->init();
 				itemview->set_feed(itemlist->get_feed());
 				itemview->set_guid(itemlist->get_guid());
+				itemview->init();
 			}
 			return true;
 		}
@@ -916,9 +917,9 @@ bool View::get_next(ItemListFormAction* itemlist, ItemViewFormAction* itemview)
 	if (itemlist->jump_to_next_item(false)) {
 		LOG(Level::DEBUG, "View::get_next: article in same feed");
 		if (itemview) {
-			itemview->init();
 			itemview->set_feed(itemlist->get_feed());
 			itemview->set_guid(itemlist->get_guid());
+			itemview->init();
 		}
 		return true;
 	} else if (cfg->get_configvalue_as_bool("goto-next-feed") == false) {
@@ -932,9 +933,9 @@ bool View::get_next(ItemListFormAction* itemlist, ItemViewFormAction* itemview)
 		itemlist->init();
 		if (itemlist->jump_to_next_item(true)) {
 			if (itemview) {
-				itemview->init();
 				itemview->set_feed(itemlist->get_feed());
 				itemview->set_guid(itemlist->get_guid());
+				itemview->init();
 			}
 			return true;
 		}

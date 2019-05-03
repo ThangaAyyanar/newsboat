@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "exceptions.h"
-#include "formatstring.h"
+#include "fmtstrformatter.h"
 #include "itemrenderer.h"
 #include "logger.h"
 #include "strprintf.h"
@@ -29,7 +29,6 @@ ItemViewFormAction::ItemViewFormAction(View* vv,
 	, itemlist(il)
 	, in_search(false)
 	, rsscache(cc)
-	, cfg(cfg)
 {
 	valid_cmds.push_back("save");
 	std::sort(valid_cmds.begin(), valid_cmds.end());
@@ -57,6 +56,7 @@ void ItemViewFormAction::init()
 		update_percent();
 	}
 	set_keymap_hints();
+	item = feed->get_item_by_guid(guid);
 }
 
 void ItemViewFormAction::update_head(const std::shared_ptr<RssItem>& item)
@@ -89,8 +89,6 @@ void ItemViewFormAction::prepare()
 			// XXX HACK: render once so that we get a proper widget width
 			f->run(-3);
 		}
-
-		std::shared_ptr<RssItem> item = feed->get_item_by_guid(guid);
 
 		update_head(item);
 
@@ -145,7 +143,6 @@ void ItemViewFormAction::process_operation(Operation op,
 	bool automatic,
 	std::vector<std::string>* args)
 {
-	std::shared_ptr<RssItem> item = feed->get_item_by_guid(guid);
 	bool hardquit = false;
 
 	/*
@@ -176,10 +173,7 @@ void ItemViewFormAction::process_operation(Operation op,
 	case OP_ENQUEUE: {
 		if (item->enclosure_url().length() > 0 &&
 			utils::is_http_url(item->enclosure_url())) {
-			v->get_ctrl()->enqueue_url(item->enclosure_url(),
-				item->title(),
-				item->pubDate_timestamp(),
-				feed);
+			v->get_ctrl()->enqueue_url(item, feed);
 			v->set_status(
 				strprintf::fmt(_("Added %s to download queue."),
 					item->enclosure_url()));
@@ -465,8 +459,6 @@ void ItemViewFormAction::handle_cmdline(const std::string& cmd)
 	if (!tokens.empty()) {
 		if (tokens[0] == "save" && tokens.size() >= 2) {
 			std::string filename = utils::resolve_tilde(tokens[1]);
-			std::shared_ptr<RssItem> item =
-				feed->get_item_by_guid(guid);
 
 			if (filename == "") {
 				v->show_error(_("Aborted saving."));
@@ -494,8 +486,6 @@ void ItemViewFormAction::handle_cmdline(const std::string& cmd)
 void ItemViewFormAction::finished_qna(Operation op)
 {
 	FormAction::finished_qna(op); // important!
-
-	std::shared_ptr<RssItem> item = feed->get_item_by_guid(guid);
 
 	switch (op) {
 	case OP_INT_EDITFLAGS_END:
@@ -587,7 +577,6 @@ void ItemViewFormAction::update_percent()
 
 std::string ItemViewFormAction::title()
 {
-	std::shared_ptr<RssItem> item = feed->get_item_by_guid(guid);
 	auto title = item->title();
 	utils::remove_soft_hyphens(title);
 	return strprintf::fmt(_("Article - %s"), title);

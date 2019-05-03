@@ -175,6 +175,7 @@ ConfigContainer::ConfigContainer()
 				  ConfigDataType::STR,
 				  true)},
 		  {"show-keymap-hint", ConfigData("yes", ConfigDataType::BOOL)},
+	          {"show-title-bar", ConfigData("yes", ConfigDataType::BOOL)},
 		  {"show-read-articles", ConfigData("yes", ConfigDataType::BOOL)},
 		  {"show-read-feeds", ConfigData("yes", ConfigDataType::BOOL)},
 		  {"suppress-first-reload",
@@ -508,6 +509,8 @@ ArticleSortStrategy ConfigContainer::get_article_sort_strategy()
 			ss.sm = ArtSortMethod::LINK;
 		} else if (methods[0] == "guid") {
 			ss.sm = ArtSortMethod::GUID;
+		} else if (methods[0] == "random") {
+			ss.sm = ArtSortMethod::RANDOM;
 		}
 	}
 

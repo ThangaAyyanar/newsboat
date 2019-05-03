@@ -1,6 +1,9 @@
 #include "utils.h"
 
-#include <unistd.h> // chdir()
+#include <chrono>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "3rd-party/catch.hpp"
 #include "test-helpers.h"
@@ -253,6 +256,55 @@ TEST_CASE("run_program()", "[utils]")
 	REQUIRE(utils::run_program(argv, "") == "hello world");
 }
 
+TEST_CASE("run_command() executes the given command with a given argument",
+		"[utils]")
+{
+	TestHelpers::TempFile sentry;
+	const auto argument = sentry.getPath();
+
+	{
+		INFO("File shouldn't exist, because TempFile doesn't create it");
+
+		struct stat sb;
+		const int result = ::stat(argument.c_str(), &sb);
+		const int saved_errno = errno;
+
+		REQUIRE(result == -1);
+		REQUIRE(saved_errno == ENOENT);
+	}
+
+	utils::run_command("touch", argument);
+
+	// Sleep for 10 milliseconds, waiting for `touch` to create the file
+	::usleep(10 * 1000);
+
+	{
+		INFO("File should have been created by the `touch`");
+
+		struct stat sb;
+		const int result = ::stat(argument.c_str(), &sb);
+		REQUIRE(result == 0);
+	}
+}
+
+TEST_CASE("run_command() doesn't wait for the command to finish",
+		"[utils]")
+{
+	using namespace std::chrono;
+
+	const auto start = high_resolution_clock::now();
+
+	const std::string argument("5");
+	utils::run_command("sleep", argument);
+
+	const auto finish = high_resolution_clock::now();
+	const auto runtime = duration_cast<milliseconds>(finish - start);
+
+	// run_command finished under a second, meaning it didn't wait for
+	// a five-second sleep to finish
+	REQUIRE(runtime.count() < 1000);
+}
+
 TEST_CASE("resolve_tilde() replaces ~ with the path to the $HOME directory", "[utils]")
 {
 	SECTION("prefix-tilde replaced")
@@ -263,6 +315,20 @@ TEST_CASE("resolve_tilde() replaces ~ with the path to the $HOME directory", "[u
 		REQUIRE(utils::resolve_tilde("~/") == "test/");
 		REQUIRE(utils::resolve_tilde("~/dir") == "test/dir");
 		REQUIRE(utils::resolve_tilde("/home/~") == "/home/~");
+	}
+}
+
+TEST_CASE("resolve_relative() returns an absolute file path relative to another")
+{
+	SECTION("Nothing - absolute path")
+	{
+		REQUIRE(utils::resolve_relative("/foo/bar", "/baz") == "/baz");
+		REQUIRE(utils::resolve_relative("/config", "/config/baz") == "/config/baz");
+	}
+	SECTION("Reference path")
+	{
+		REQUIRE(utils::resolve_relative("/foo/bar", "baz") == "/foo/baz");
+		REQUIRE(utils::resolve_relative("/config", "baz") == "/baz");
 	}
 }
 
@@ -420,6 +486,19 @@ TEST_CASE("strwidth()", "[utils]")
 	REQUIRE(utils::strwidth("xx") == 2);
 
 	REQUIRE(utils::strwidth(utils::wstr2str(L"\uF91F")) == 2);
+	REQUIRE(utils::strwidth("\07") == 1);
+}
+
+TEST_CASE("strwidth_stfl()", "[utils]")
+{
+	REQUIRE(utils::strwidth_stfl("") == 0);
+
+	REQUIRE(utils::strwidth_stfl("x<hi>x") == 3);
+
+	REQUIRE(utils::strwidth_stfl("x<>x") == 4);
+
+	REQUIRE(utils::strwidth_stfl(utils::wstr2str(L"\uF91F")) == 2);
+	REQUIRE(utils::strwidth_stfl("\07") == 1);
 }
 
 TEST_CASE("is_http_url()", "[utils]")
@@ -596,6 +675,12 @@ TEST_CASE("utils::make_title extracts possible title from URL")
 	SECTION("Deal with an empty last component")
 	{
 		auto input = "https://example.com/?format=rss";
+		REQUIRE(utils::make_title(input) == "");
+	}
+
+	SECTION("Deal with an empty input")
+	{
+		auto input = "";
 		REQUIRE(utils::make_title(input) == "");
 	}
 }
@@ -918,4 +1003,45 @@ TEST_CASE(
 
 	REQUIRE(utils::get_proxy_type("") == CURLPROXY_HTTP);
 	REQUIRE(utils::get_proxy_type("test") == CURLPROXY_HTTP);
+}
+
+TEST_CASE("is_valid_attribute returns true if given string is an STFL attribute",
+		"[utils]")
+{
+	const std::vector<std::string> invalid = {
+		"foo",
+		"bar",
+		"baz",
+		"quux"
+	};
+	for (const auto& attr : invalid) {
+		REQUIRE_FALSE(utils::is_valid_attribute(attr));
+	}
+
+	const std::vector<std::string> valid = {
+		"standout",
+		"underline",
+		"reverse",
+		"blink",
+		"dim",
+		"bold",
+		"protect",
+		"invis",
+		"default"
+	};
+	for (const auto& attr : valid) {
+		REQUIRE(utils::is_valid_attribute(attr));
+	}
+}
+
+TEST_CASE("unescape_url() takes a percent-encoded string and returns the string "
+		"with a precent escaped string",
+		"[utils]")
+{
+	REQUIRE(utils::unescape_url("foo%20bar") == "foo bar");
+	REQUIRE(utils::unescape_url(
+			"%21%23%24%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D") ==
+			"!#$&'()*+,/:;=?@[]");
+	REQUIRE(utils::unescape_url("%00") == "");
+
 }

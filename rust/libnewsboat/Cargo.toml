@@ -1,6 +1,6 @@
 [package]
 name = "libnewsboat"
-version = "2.14.0"
+version = "2.15.0"
 authors = ["Alexander Batischev <eual.jp@gmail.com>"]
 
 [dependencies]
@@ -10,6 +10,11 @@ once_cell = "0.1.6"
 regex = "1.0"
 url = "1.7"
 dirs = "1.0.4"
+backtrace = "= 0.3"
+unicode-width = "0.1.5"
+nom = "^4.1"
+unicode-segmentation = "1"
 
 [dev-dependencies]
 tempfile = "3"
+proptest = "0.7"

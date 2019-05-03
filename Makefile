@@ -9,6 +9,9 @@ CPPCHECK_JOBS?=5
 
 # compiler
 CXX?=c++
+# Compiler for building executables meant to be run on the
+# host system during cross compilation
+CXX_FOR_BUILD?=$(CXX)
 
 # compiler and linker flags
 DEFINES=-DLOCALEDIR=\"$(localedir)\"
@@ -35,6 +38,7 @@ LDFLAGS+=-fprofile-arcs -ftest-coverage
 endif
 
 CXXFLAGS:=$(BARE_CXXFLAGS) $(WARNFLAGS) $(DEFINES) $(CXXFLAGS)
+CXXFLAGS_FOR_BUILD?=$(CXXFLAGS)
 
 LIB_SOURCES:=$(shell cat mk/libboat.deps)
 LIB_OBJS:=$(patsubst %.cpp,%.o,$(LIB_SOURCES))
@@ -55,11 +59,21 @@ RSSPPLIB_OUTPUT=librsspp.a
 
 CARGO_FLAGS+=--verbose
 ifeq ($(PROFILE),1)
+ifdef CARGO_BUILD_TARGET
+NEWSBOATLIB_OUTPUT=target/$(CARGO_BUILD_TARGET)/debug/libnewsboat.a
+LDFLAGS+=-L./target/$(CARGO_BUILD_TARGET)/debug
+else
 NEWSBOATLIB_OUTPUT=target/debug/libnewsboat.a
 LDFLAGS+=-L./target/debug
+endif
+else
+ifdef CARGO_BUILD_TARGET
+NEWSBOATLIB_OUTPUT=target/$(CARGO_BUILD_TARGET)/release/libnewsboat.a
+LDFLAGS+=-L./target/$(CARGO_BUILD_TARGET)/release
 else
 NEWSBOATLIB_OUTPUT=target/release/libnewsboat.a
-LDFLAGS+=-L.//target/release
+LDFLAGS+=-L./target/release
+endif
 CARGO_FLAGS+=--release
 endif
 LDFLAGS+=-lnewsboat -lpthread -ldl
@@ -82,11 +96,13 @@ MSGFMT=msgfmt
 RANLIB?=ranlib
 AR?=ar
 CHMOD=chmod
+CARGO=cargo
 
 STFLHDRS:=$(patsubst %.stfl,%.h,$(wildcard stfl/*.stfl))
 POFILES:=$(wildcard po/*.po)
 MOFILES:=$(patsubst %.po,%.mo,$(POFILES))
 POTFILE=po/newsboat.pot
+RUST_SRCS:=Cargo.toml $(shell find rust -type f)
 
 TEXTCONV=./txt2h
 RM=rm -f
@@ -95,8 +111,8 @@ all: doc $(NEWSBOAT) $(PODBOAT) mo-files
 
 NB_DEPS=xlicense.h $(LIB_OUTPUT) $(FILTERLIB_OUTPUT) $(NEWSBOAT_OBJS) $(RSSPPLIB_OUTPUT) $(NEWSBOATLIB_OUTPUT)
 
-$(NEWSBOATLIB_OUTPUT): .FORCE
-	cargo build $(CARGO_FLAGS)
+$(NEWSBOATLIB_OUTPUT): $(RUST_SRCS)
+	$(CARGO) build $(CARGO_FLAGS)
 
 $(NEWSBOAT): $(NB_DEPS)
 	$(CXX) $(CXXFLAGS) -o $(NEWSBOAT) $(NEWSBOAT_OBJS) $(NEWSBOAT_LIBS) $(LDFLAGS)
@@ -184,13 +200,13 @@ doc/xhtml/faq.html: doc/faq.txt
 	echo "td > pre { margin: 0; white-space: pre-wrap; }" >> doc/xhtml/docbook-xsl.css
 
 doc/generate: doc/generate.cpp doc/split.h
-	$(CXX) $(CXXFLAGS) -o doc/generate doc/generate.cpp
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -o doc/generate doc/generate.cpp
 
 doc/newsboat-cfgcmds.txt: doc/generate doc/configcommands.dsv
 	doc/generate doc/configcommands.dsv > doc/newsboat-cfgcmds.txt
 
 doc/generate2: doc/generate2.cpp
-	$(CXX) $(CXXFLAGS) -o doc/generate2 doc/generate2.cpp
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -o doc/generate2 doc/generate2.cpp
 
 doc/newsboat-keycmds.txt: doc/generate2 doc/keycmds.dsv
 	doc/generate2 doc/keycmds.dsv > doc/newsboat-keycmds.txt
@@ -208,7 +224,7 @@ doc/podboat.1: doc/manpage-podboat.txt doc/chapter-podcasts.txt doc/podboat-cfgc
 	$(A2X) -f manpage doc/manpage-podboat.txt
 
 doc/gen-example-config: doc/gen-example-config.cpp doc/split.h
-	$(CXX) $(CXXFLAGS) -o doc/gen-example-config doc/gen-example-config.cpp
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -o doc/gen-example-config doc/gen-example-config.cpp
 
 doc/example-config: doc/gen-example-config doc/configcommands.dsv
 	sed 's/+{backslash}"+/`\\"`/g' doc/configcommands.dsv | doc/gen-example-config > doc/example-config
@@ -251,10 +267,22 @@ install-podboat: $(PODBOAT) doc/$(PODBOAT).1
 install-docs: doc
 	$(MKDIR) $(DESTDIR)$(docdir)
 	$(INSTALL) -m 644 doc/xhtml/* $(DESTDIR)$(docdir) || true
+	$(INSTALL) -m 644 CHANGELOG.md $(DESTDIR)$(docdir) || true
+	$(MKDIR) $(DESTDIR)$(docdir)/contrib
+	$(INSTALL) -m 755 contrib/*.sh $(DESTDIR)$(docdir)/contrib || true
+	$(INSTALL) -m 755 contrib/*.rb $(DESTDIR)$(docdir)/contrib || true
+	$(INSTALL) -m 755 contrib/*.pl $(DESTDIR)$(docdir)/contrib || true
+	$(MKDIR) $(DESTDIR)$(docdir)/contrib/colorschemes
+	$(INSTALL) -m 644 contrib/colorschemes/* $(DESTDIR)$(docdir)/contrib/colorschemes || true
+	$(MKDIR) $(DESTDIR)$(docdir)/contrib/getpocket.com
+	$(INSTALL) -m 755 contrib/getpocket.com/*.sh $(DESTDIR)$(docdir)/contrib/getpocket.com || true
+	$(INSTALL) -m 644 contrib/getpocket.com/*.md $(DESTDIR)$(docdir)/contrib/getpocket.com || true
 
 install-examples: doc/example-config
 	$(MKDIR) $(DESTDIR)$(docdir)/examples
 	$(INSTALL) -m 644 doc/example-config $(DESTDIR)$(docdir)/examples/config || true
+	$(INSTALL) -m 755 doc/example-bookmark-plugin.sh $(DESTDIR)$(docdir)/examples/example-bookmark-plugin.sh || true
+
 
 install: install-newsboat install-podboat install-docs install-examples install-mo
 
@@ -349,7 +377,5 @@ depslist: $(ALL_SRCS) $(ALL_HDRS)
 			echo $$file ; \
 		done; \
 	done
-
-.FORCE:
 
 include mk/mk.deps
